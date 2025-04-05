@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
@@ -8,6 +8,8 @@ import { Button } from '../components/ui/Button';
 export function ExamPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [examStartTime] = useState(new Date()); // Capture when user starts the exam
   const navigate = useNavigate();
   const { examId } = useParams<{ examId: string }>();
 
@@ -15,27 +17,41 @@ export function ExamPage() {
     queryKey: ['exam', examId],
     queryFn: async () => {
       const response = await api.get(`/exams/${examId}`);
-      console.log('Raw API Response:', response);
-      console.log('Response data:', response.data);
-      
       const examData = response.data;
-      console.log('Questions array:', examData.questions);
       
-      // Log each question's structure
-      examData.questions.forEach((question: any, index: number) => {
-        console.log(`Question ${index + 1}:`, {
-          id: question.id,
-          text: question.text,
-          options: question.options
-        });
-      });
-
       if (!examData.questions || !Array.isArray(examData.questions)) {
         throw new Error('Invalid exam data structure');
       }
       return examData;
     },
   });
+
+  useEffect(() => {
+    if (exam) {
+      // Calculate duration in milliseconds
+      const durationMs = exam.duration * 60 * 1000;
+      const end = new Date(examStartTime.getTime() + durationMs);
+
+      // Set initial time
+      const initialRemaining = end.getTime() - new Date().getTime();
+      setTimeLeft(initialRemaining);
+
+      // Start timer
+      const interval = setInterval(() => {
+        const currentRemaining = end.getTime() - new Date().getTime();
+        
+        if (currentRemaining <= 0) {
+          clearInterval(interval);
+          setTimeLeft(0);
+          handleSubmitExam(); // Auto-submit only when timer actually reaches 0
+        } else {
+          setTimeLeft(currentRemaining);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [exam, examStartTime]);
 
   if (isLoading || !exam) {
     return (
@@ -46,8 +62,6 @@ export function ExamPage() {
   }
 
   const currentQuestion = exam.questions[currentQuestionIndex];
-  console.log('Current Question:', currentQuestion);
-  console.log('Current Question Options:', currentQuestion?.options);
   
   if (!currentQuestion) {
     return (
@@ -91,18 +105,31 @@ export function ExamPage() {
     }
   };
 
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow-sm rounded-lg p-6">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">{exam.title}</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-gray-900">{exam.title}</h1>
+              <div className="text-sm">
+                <span className={`font-mono bg-gray-100 px-3 py-1 rounded-lg ${
+                  timeLeft && timeLeft < 300000 ? 'bg-red-100 text-red-800' : 'text-gray-800'
+                }`}>
+                  {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+                </span>
+              </div>
+            </div>
             <div className="flex justify-between items-center mt-2">
               <p className="text-sm text-gray-500">
                 Question {currentQuestionIndex + 1} of {exam.questions.length}
-              </p>
-              <p className="text-sm text-gray-500">
-                Duration: {exam.duration} minutes
               </p>
             </div>
           </div>
