@@ -188,4 +188,4 @@ Error Response:
 
 8. Required Environment Variables
 ===============================
-BACKEND_URL=http://localhost:3000 (configurable)
+BACKEND_URL=http://unisphere-api.clusterider.tech (configurable)
