@@ -9,6 +9,13 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { PublicLayout } from './components/layouts/PublicLayout';
 import { useAuthStore } from './store/auth.store';
 
+// Admin imports
+import AdminLogin from './pages/admin/Login';
+import AdminDashboard from './pages/admin/Dashboard';
+import CreateExam from './pages/admin/CreateExam';
+import ExamDetails from './pages/admin/ExamDetails';
+import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -55,14 +62,14 @@ function AppRoutes() {
   const { isLoading } = useAuthStore();
   const [isSEB, setIsSEB] = useState(true);
 
-  useEffect(() => {
-    const userAgent = navigator.userAgent;
-    if (userAgent.includes("SEB/")) {
-      setIsSEB(true);
-    } else {
-      setIsSEB(false);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const userAgent = navigator.userAgent;
+  //   if (userAgent.includes("SEB/")) {
+  //     setIsSEB(true);
+  //   } else {
+  //     setIsSEB(false);
+  //   }
+  // }, []);
 
   if (isLoading) {
     return (
@@ -72,15 +79,38 @@ function AppRoutes() {
     );
   }
 
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  
+  // Allow admin routes without SEB
+  if (isAdminRoute) {
+    return (
+      <Routes>
+        {/* Admin Public Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Protected Routes */}
+        <Route element={<ProtectedAdminRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/exams/create" element={<CreateExam />} />
+          <Route path="/admin/exams/:examId" element={<ExamDetails />} />
+        </Route>
+
+        {/* Redirect admin root to dashboard */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      </Routes>
+    );
+  }
+
+  // Student routes require SEB
   return isSEB ? (
     <Routes>
-      {/* Public Routes */}
+      {/* Student Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
 
-      {/* Protected Routes */}
+      {/* Student Protected Routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/exam/:examId" element={<ExamPage />} />
@@ -92,11 +122,11 @@ function AppRoutes() {
       {/* Catch all other routes and redirect to dashboard */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
-  ): (
+  ) : (
     <Routes>
       <Route path="*" element={<AccessRestricted />} />
     </Routes>
-  )
+  );
 }
 
 export default function App() {
