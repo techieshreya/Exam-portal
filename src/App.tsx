@@ -62,14 +62,14 @@ function AppRoutes() {
   const { isLoading } = useAuthStore();
   const [isSEB, setIsSEB] = useState(true);
 
-  // useEffect(() => {
-  //   const userAgent = navigator.userAgent;
-  //   if (userAgent.includes("SEB/")) {
-  //     setIsSEB(true);
-  //   } else {
-  //     setIsSEB(false);
-  //   }
-  // }, []);
+  useEffect(() => {
+    const userAgent = navigator.userAgent;
+    if (userAgent.includes("SEB/")) {
+      setIsSEB(true);
+    } else {
+      setIsSEB(false);
+    }
+  }, []);
 
   if (isLoading) {
     return (
