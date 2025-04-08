@@ -9,7 +9,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { isAuthenticated } = useAdminAuth();
+  const { isAuthenticated, logout } = useAdminAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -48,7 +53,15 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-red-600 hover:text-red-900"
+            >
+              Logout
+            </button>
+          </div>
           <button
             onClick={() => navigate('/admin/exams/create')}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
