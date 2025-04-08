@@ -9,14 +9,9 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-import { Admin, AdminAuthResponse, Exam, ExamResult, User } from '../types/admin';
+import { Admin, AdminAuthResponse, Exam, ExamResult, StudentExamResult, User } from '../types/admin';
 
 class AdminService {
-  async register(email: string, password: string, name: string): Promise<AdminAuthResponse> {
-    const response = await api.post('/admin/register', { email, password, name });
-    return response.data;
-  }
-
   async login(email: string, password: string): Promise<AdminAuthResponse> {
     const response = await api.post('/admin/login', { email, password });
     return response.data;
@@ -48,6 +43,19 @@ class AdminService {
 
   async listUsers(): Promise<User[]> {
     const response = await api.get('/admin/users');
+    return response.data;
+  }
+
+  async getStudentExamResult(examId: string, userId: string): Promise<StudentExamResult> {
+    const response = await api.get(`/admin/exams/${examId}/results/${userId}`);
+    return response.data;
+  }
+
+  async bulkCreateUsers(users: Array<{ email: string; password: string; username: string }>): Promise<{
+    created: User[];
+    skipped: Array<{ email: string; reason: string }>;
+  }> {
+    const response = await api.post('/admin/users/bulk', { users });
     return response.data;
   }
 }

@@ -35,13 +35,14 @@ export interface Exam {
 export interface ExamResult {
   sessionId: string;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   completed: boolean;
   userId: string;
   userEmail: string;
   username: string;
-  score: number;
-  totalQuestions: number;
+  score: number | null;
+  totalQuestions: number | null;
+  correctAnswers?: number;
   answers: ExamAnswer[];
 }
 
@@ -50,6 +51,20 @@ export interface ExamAnswer {
   selectedOptionId: string;
   selectedOptionText: string;
   isCorrect: boolean;
+  questionText?: string;
+  correctOptionId?: string;
+  correctOptionText?: string;
+}
+
+export interface StudentExamResult extends ExamResult {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  answers: Array<ExamAnswer & {
+    questionText: string;
+    correctOptionId: string;
+    correctOptionText: string;
+  }>;
 }
 
 export interface User {

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { ExamPage } from './pages/ExamPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -15,6 +14,10 @@ import AdminDashboard from './pages/admin/Dashboard';
 import CreateExam from './pages/admin/CreateExam';
 import ExamDetails from './pages/admin/ExamDetails';
 import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute';
+import UserList from './pages/admin/UserList'; // Added import
+import BulkCreateUsers from './pages/admin/BulkCreateUsers'; // Added import
+import ExamResults from './pages/admin/ExamResults'; // Added import
+import StudentExamResult from './pages/admin/StudentExamResult'; // Added import
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,8 +94,14 @@ function AppRoutes() {
         {/* Admin Protected Routes */}
         <Route element={<ProtectedAdminRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* Exam Management */}
           <Route path="/admin/exams/create" element={<CreateExam />} />
           <Route path="/admin/exams/:examId" element={<ExamDetails />} />
+          <Route path="/admin/exams/:examId/results" element={<ExamResults />} />
+          <Route path="/admin/exams/:examId/results/:userId" element={<StudentExamResult />} />
+          {/* User Management */}
+          <Route path="/admin/users" element={<UserList />} />
+          <Route path="/admin/users/bulk" element={<BulkCreateUsers />} />
         </Route>
 
         {/* Redirect admin root to dashboard */}
@@ -107,7 +116,6 @@ function AppRoutes() {
       {/* Student Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
       </Route>
 
       {/* Student Protected Routes */}
