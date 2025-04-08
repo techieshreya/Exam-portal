@@ -155,7 +155,7 @@ export default function ExamDetails() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {result.score}% ({result.score / 100 * result.totalQuestions} / {result.totalQuestions})
+                        {result.score}% ({result.score! / 100 * result.totalQuestions!} / {result.totalQuestions})
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
