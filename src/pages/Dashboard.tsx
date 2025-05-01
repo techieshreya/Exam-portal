@@ -14,10 +14,6 @@ export function Dashboard() {
     queryFn: examService.getAvailableExams,
   });
 
-  const isExamAttempted = (examId: string) => {
-    return false; // No longer tracking completed exams
-  };
-
   const handleStartExam = async (examId: string) => {
     try {
       await examService.startExam(examId);
