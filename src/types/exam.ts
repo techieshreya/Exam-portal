@@ -1,6 +1,7 @@
 export interface Question {
   id: string;
   text: string;
+  imageUrls?: string[]; // Array of image URLs
   options: {
     id: string;
     text: string;

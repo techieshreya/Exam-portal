@@ -58,6 +58,19 @@ class AdminService {
     const response = await api.post('/admin/users/bulk', { users });
     return response.data;
   }
+
+  async uploadImage(file: File): Promise<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await api.post('/admin/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data.data;
+  }
 }
 
 export const adminService = new AdminService();

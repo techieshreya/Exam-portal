@@ -12,6 +12,7 @@ export interface AdminAuthResponse {
 export interface ExamQuestion {
   id?: string;
   text: string;
+  imageUrls?: string[]; // Array of image URLs associated with the question
   options: ExamQuestionOption[];
 }
 

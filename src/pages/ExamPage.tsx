@@ -136,6 +136,23 @@ export function ExamPage() {
 
           <div className="space-y-6">
             <div className="text-lg text-gray-900">{currentQuestion.text}</div>
+            
+            {/* Display question images */}
+            {currentQuestion.imageUrls && currentQuestion.imageUrls.length > 0 && (
+              <div className="mt-4 mb-6">
+                <div className="grid grid-cols-1 gap-4">
+                  {currentQuestion.imageUrls.map((url, index) => (
+                    <div key={index} className="flex justify-center">
+                      <img 
+                        src={url} 
+                        alt={`Question ${currentQuestionIndex + 1} image ${index + 1}`} 
+                        className="max-h-64 object-contain rounded-md border border-gray-300" 
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               {currentQuestion.options?.map((option) => (

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import { ExamQuestion } from '../../types/admin';
@@ -8,6 +8,9 @@ export default function CreateExam() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAdminAuth();
   const [error, setError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -15,10 +18,18 @@ export default function CreateExam() {
     startTime: '',
     endTime: '',
   });
+  
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
 
+  // Use useEffect for redirection instead of conditional return before hooks
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/admin/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // If not authenticated, render nothing while redirecting
   if (!isAuthenticated) {
-    navigate('/admin/login');
     return null;
   }
 
@@ -54,6 +65,7 @@ export default function CreateExam() {
       ...questions,
       {
         text: '',
+        imageUrls: [], // Initialize empty array for image URLs
         options: [
           { text: '', correct: true },
           { text: '', correct: false },
@@ -80,6 +92,49 @@ export default function CreateExam() {
 
   const removeQuestion = (index: number) => {
     setQuestions(questions.filter((_, i) => i !== index));
+  };
+  
+  const handleImageUpload = async (questionIndex: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    try {
+      setIsUploading(true);
+      setError('');
+      
+      const uploadPromises = Array.from(files).map(file => adminService.uploadImage(file));
+      const results = await Promise.all(uploadPromises);
+      
+      const newQuestions = [...questions];
+      const question = newQuestions[questionIndex];
+      
+      // Initialize imageUrls array if it doesn't exist
+      if (!question.imageUrls) {
+        question.imageUrls = [];
+      }
+      
+      // Add new image URLs
+      question.imageUrls = [...question.imageUrls, ...results.map(result => result.url)];
+      
+      setQuestions(newQuestions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image(s)');
+    } finally {
+      setIsUploading(false);
+      // Clear the file input
+      if (fileInputRefs.current[questionIndex]) {
+        fileInputRefs.current[questionIndex]!.value = '';
+      }
+    }
+  };
+  
+  const removeImage = (questionIndex: number, imageUrlIndex: number) => {
+    const newQuestions = [...questions];
+    const question = newQuestions[questionIndex];
+    
+    if (question.imageUrls) {
+      question.imageUrls = question.imageUrls.filter((_, i) => i !== imageUrlIndex);
+      setQuestions(newQuestions);
+    }
   };
 
   return (
@@ -210,6 +265,60 @@ export default function CreateExam() {
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       />
                     </div>
+                    
+                    {/* Image Upload Section */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Question Images (optional)
+                      </label>
+                      
+                      {/* Display uploaded images */}
+                      {question.imageUrls && question.imageUrls.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                          {question.imageUrls.map((url, imgIndex) => (
+                            <div 
+                              key={imgIndex} 
+                              className="relative border rounded-md overflow-hidden h-24"
+                            >
+                              <img 
+                                src={url} 
+                                alt={`Question ${qIndex + 1} image ${imgIndex + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImage(qIndex, imgIndex)}
+                                className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center text-xs"
+                                aria-label="Remove image"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="file"
+                          id={`question-image-${qIndex}`}
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleImageUpload(qIndex, e.target.files)}
+                          ref={(ref) => {
+                            fileInputRefs.current[qIndex] = ref;
+                          }}
+
+                          className="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-indigo-50 file:text-indigo-700
+                            hover:file:bg-indigo-100"
+                        />
+                        {isUploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                      </div>
+                    </div>
 
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -269,9 +378,12 @@ export default function CreateExam() {
             </button>
             <button
               type="submit"
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={isUploading}
+              className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                isUploading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              Create Exam
+              {isUploading ? 'Uploading...' : 'Create Exam'}
             </button>
           </div>
         </form>
