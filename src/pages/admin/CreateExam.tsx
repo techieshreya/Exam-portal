@@ -3,6 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import { ExamQuestion } from '../../types/admin';
 import useAdminAuth from '../../hooks/useAdminAuth';
+import { 
+  ArrowLeft,
+  Clock,
+  Calendar,
+  Plus,
+  Trash2,
+  Image,
+  X,
+  PlusCircle,
+  Loader2,
+  Save,
+  AlertCircle
+} from 'lucide-react';
 
 export default function CreateExam() {
   const navigate = useNavigate();
@@ -101,9 +114,24 @@ export default function CreateExam() {
       setIsUploading(true);
       setError('');
       
-      const uploadPromises = Array.from(files).map(file => adminService.uploadImage(file));
-      const results = await Promise.all(uploadPromises);
+      const results: { url: string }[] = [];
+      for (const file of Array.from(files)) {
+        try {
+          const result = await adminService.uploadImage(file);
+          if (!result || !result.url) {
+            throw new Error(`Failed to get URL for ${file.name}`);
+          }
+          results.push(result);
+        } catch (err) {
+          console.error('Image upload error:', err);
+          setError(`Failed to upload ${file.name}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+      }
       
+      if (!results.length) {
+        throw new Error('No images were uploaded successfully');
+      }
+
       const newQuestions = [...questions];
       const question = newQuestions[questionIndex];
       
@@ -112,10 +140,24 @@ export default function CreateExam() {
         question.imageUrls = [];
       }
       
-      // Add new image URLs
-      question.imageUrls = [...question.imageUrls, ...results.map(result => result.url)];
+      // Filter out any failed uploads and add successful ones
+      const validUrls = results
+        .filter(result => result && result.url)
+        .map(result => {
+          if (!result.url) {
+            console.error('Missing URL in result:', result);
+            return null;
+          }
+          return result.url;
+        })
+        .filter((url): url is string => url !== null);
       
-      setQuestions(newQuestions);
+      if (validUrls.length) {
+        question.imageUrls = [...question.imageUrls, ...validUrls];
+        setQuestions(newQuestions);
+      } else {
+        throw new Error('No valid image URLs were received from the server');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload image(s)');
     } finally {
@@ -138,34 +180,68 @@ export default function CreateExam() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Create Exam</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/admin/dashboard')}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none transition-colors duration-200"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900">Create New Exam</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Fill in the exam details and add questions below.
+            </p>
+          </div>
+        </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-4">
-            <div className="text-sm text-red-700">{error}</div>
+          <div className="rounded-lg bg-red-50 p-4 mb-6 border border-red-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-            <div className="grid grid-cols-1 gap-6">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
+          <div className="bg-white shadow px-6 py-6 sm:rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-2">
+                <div className="relative">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    required
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                    placeholder="Enter exam title"
+                  />
+                </div>
               </div>
 
-              <div>
+              <div className="col-span-2">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
                   Description
                 </label>
@@ -175,63 +251,85 @@ export default function CreateExam() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Enter exam description"
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
                   Duration (minutes)
                 </label>
-                <input
-                  type="number"
-                  id="duration"
-                  required
-                  min="1"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
+                <div className="relative rounded-lg shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Clock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="number"
+                    id="duration"
+                    required
+                    min="1"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
                   Start Time
                 </label>
-                <input
-                  type="datetime-local"
-                  id="startTime"
-                  required
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
+                <div className="relative rounded-lg shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="datetime-local"
+                    id="startTime"
+                    required
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
                   End Time
                 </label>
-                <input
-                  type="datetime-local"
-                  id="endTime"
-                  required
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
+                <div className="relative rounded-lg shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="datetime-local"
+                    id="endTime"
+                    required
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-xl font-medium text-gray-900">Questions</h2>
+          <div className="bg-white shadow px-6 py-6 sm:rounded-lg">
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-medium text-gray-900">Questions</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Add and manage exam questions below.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={addQuestion}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
               >
+                <Plus className="h-4 w-4 mr-2" />
                 Add Question
               </button>
             </div>
@@ -244,8 +342,9 @@ export default function CreateExam() {
                     <button
                       type="button"
                       onClick={() => removeQuestion(qIndex)}
-                      className="text-red-600 hover:text-red-900"
+                      className="inline-flex items-center text-red-600 hover:text-red-900 transition-colors duration-200"
                     >
+                      <Trash2 className="h-4 w-4 mr-1" />
                       Remove
                     </button>
                   </div>
@@ -262,7 +361,8 @@ export default function CreateExam() {
                         onChange={(e) =>
                           updateQuestion(qIndex, { ...question, text: e.target.value })
                         }
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
+                        placeholder="Enter your question here"
                       />
                     </div>
                     
@@ -326,8 +426,9 @@ export default function CreateExam() {
                         <button
                           type="button"
                           onClick={() => addOptionToQuestion(qIndex)}
-                          className="inline-flex items-center px-2 py-1 border border-transparent rounded-md text-sm font-medium text-indigo-600 hover:text-indigo-700 focus:outline-none"
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-indigo-600 hover:text-indigo-700 focus:outline-none transition-colors duration-200"
                         >
+                          <PlusCircle className="h-4 w-4 mr-1" />
                           Add Option
                         </button>
                       </div>
@@ -368,24 +469,38 @@ export default function CreateExam() {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/admin/dashboard')}
-              className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isUploading}
-              className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
-                isUploading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
-              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-            >
-              {isUploading ? 'Uploading...' : 'Create Exam'}
-            </button>
+          <div className="bg-white shadow px-6 py-4 sm:rounded-lg fixed bottom-0 left-0 right-0 border-t border-gray-200">
+            <div className="max-w-4xl mx-auto flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => navigate('/admin/dashboard')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUploading}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white ${
+                  isUploading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200`}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating Exam...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Create Exam
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+          <div className="h-20" /> {/* Spacer for fixed footer */}
         </form>
       </div>
     </div>

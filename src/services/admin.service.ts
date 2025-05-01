@@ -69,7 +69,25 @@ class AdminService {
       },
     });
     
-    return response.data.data;
+    // Since response.data has nested data property
+    // console.log('Upload response:', response.data);
+    
+    if (!response.data.url) {
+      throw new Error('Invalid response format from server: missing URL');
+    }
+    
+    const data = response.data;
+
+    // Ensure both URL and filename exist
+    if (!data.url || !data.filename) {
+      console.error('Invalid response data:', data);
+      throw new Error('Invalid response format from server');
+    }
+
+    return {
+      url: data.url,
+      filename: data.filename
+    };
   }
 }
 
