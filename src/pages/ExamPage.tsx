@@ -4,12 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { Exam } from '../types/exam';
 import { Button } from '../components/ui/Button';
+import { ImageZoom } from '../components/ui/ImageZoom';
 
 export function ExamPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [examStartTime] = useState(new Date()); // Capture when user starts the exam
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { examId } = useParams<{ examId: string }>();
 
@@ -165,12 +167,21 @@ export function ExamPage() {
                         <img 
                           src={url} 
                           alt={`Question ${currentQuestionIndex + 1} image ${index + 1}`} 
-                          className="max-h-64 object-contain rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow" 
+                          className="max-h-64 object-contain rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" 
+                          onClick={() => setSelectedImage(url)}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
+              )}
+              
+              {selectedImage && (
+                <ImageZoom
+                  src={selectedImage}
+                  alt="Zoomed question image"
+                  onClose={() => setSelectedImage(null)}
+                />
               )}
 
               {/* Answer Options */}

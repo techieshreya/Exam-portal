@@ -12,6 +12,15 @@ export function Dashboard() {
   const { data: exams, isLoading: isLoadingExams } = useQuery<Exam[]>({
     queryKey: ['exams'],
     queryFn: examService.getAvailableExams,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
+  });
+
+  const { data: examResults } = useQuery({
+    queryKey: ['examResults'],
+    queryFn: examService.getAllResults,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const handleStartExam = async (examId: string) => {
@@ -115,14 +124,24 @@ export function Dashboard() {
                         </div>
                       </div>
 
-                      <Button 
-                        onClick={() => handleStartExam(exam.id)}
-                        disabled={!isOngoing}
-                        variant={isOngoing ? "primary" : "secondary"}
-                        className="w-full justify-center"
-                      >
-                        {isOngoing ? "Start Exam" : isUpcoming ? "Not Yet Started" : "Exam Ended"}
-                      </Button>
+                      {examResults?.some(result => result.examId === exam.id) ? (
+                        <Button 
+                          disabled
+                          variant="secondary"
+                          className="w-full justify-center"
+                        >
+                          Exam Completed
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={() => handleStartExam(exam.id)}
+                          disabled={!isOngoing}
+                          variant={isOngoing ? "primary" : "secondary"}
+                          className="w-full justify-center"
+                        >
+                          {isOngoing ? "Start Exam" : isUpcoming ? "Not Yet Started" : "Exam Ended"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

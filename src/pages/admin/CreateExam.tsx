@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/admin.service';
 import { ExamQuestion } from '../../types/admin';
 import useAdminAuth from '../../hooks/useAdminAuth';
+import { ImageZoom } from '../../components/ui/ImageZoom';
 import { 
   ArrowLeft,
   Clock,
@@ -14,7 +15,8 @@ import {
   PlusCircle,
   Loader2,
   Save,
-  AlertCircle
+  AlertCircle,
+  FileJson
 } from 'lucide-react';
 
 export default function CreateExam() {
@@ -22,7 +24,10 @@ export default function CreateExam() {
   const { isAuthenticated } = useAdminAuth();
   const [error, setError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [showJsonImport, setShowJsonImport] = useState(false);
+  const [jsonInput, setJsonInput] = useState('');
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -180,7 +185,7 @@ export default function CreateExam() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col relative pb-16">
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -324,15 +329,123 @@ export default function CreateExam() {
                   Add and manage exam questions below.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={addQuestion}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Question
-              </button>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowJsonImport(true)}
+                  className="inline-flex items-center px-4 py-2 border border-indigo-600 rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  <FileJson className="h-4 w-4 mr-2" />
+                  Import from JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={addQuestion}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Question
+                </button>
+              </div>
             </div>
+
+            {/* JSON Import Modal */}
+            {showJsonImport && (
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg max-w-3xl w-full p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Import Questions from JSON</h3>
+                    <button
+                      onClick={() => {
+                        setShowJsonImport(false);
+                        setJsonInput('');
+                      }}
+                      className="text-gray-400 hover:text-gray-500"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-500 mb-2">
+                      Paste your JSON array of questions. Format example:
+                    </p>
+                    <pre className="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-32">
+{`[
+  {
+    "text": "What is 2 + 2?",
+    "imageUrls": [
+      "https://example.com/image1.jpg",
+      "https://example.com/image2.jpg"
+    ],
+    "options": [
+      { "text": "3", "correct": false },
+      { "text": "4", "correct": true },
+      { "text": "5", "correct": false }
+    ]
+  }
+]`}
+                    </pre>
+                  </div>
+                  <textarea
+                    value={jsonInput}
+                    onChange={(e) => setJsonInput(e.target.value)}
+                    className="w-full h-64 px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Paste your JSON here..."
+                  />
+                  <div className="mt-4 flex justify-end space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowJsonImport(false);
+                        setJsonInput('');
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        try {
+                          const parsed = JSON.parse(jsonInput);
+                          if (!Array.isArray(parsed)) {
+                            throw new Error('Input must be an array of questions');
+                          }
+                          
+                          // Validate each question
+                          const validQuestions = parsed.map(q => {
+                            if (!q.text || !Array.isArray(q.options) || q.options.length < 2) {
+                              throw new Error('Each question must have text and at least 2 options');
+                            }
+                            
+                            const hasCorrectOption = q.options.some((opt: { correct: boolean }) => opt.correct);
+                            if (!hasCorrectOption) {
+                              throw new Error('Each question must have one correct option');
+                            }
+                            
+                            return {
+                              text: q.text,
+                              imageUrls: q.imageUrls || [],
+                              options: q.options.map((opt: { text: string; correct: boolean }) => ({
+                                text: opt.text,
+                                correct: opt.correct
+                              }))
+                            };
+                          });
+                          
+                          setQuestions([...questions, ...validQuestions]);
+                          setShowJsonImport(false);
+                          setJsonInput('');
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Invalid JSON format');
+                        }
+                      }}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Import Questions
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-6">
               {questions.map((question, qIndex) => (
@@ -383,7 +496,11 @@ export default function CreateExam() {
                               <img 
                                 src={url} 
                                 alt={`Question ${qIndex + 1} image ${imgIndex + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedImage(url);
+                                }}
                               />
                               <button
                                 type="button"
@@ -469,8 +586,9 @@ export default function CreateExam() {
             </div>
           </div>
 
-          <div className="bg-white shadow px-6 py-4 sm:rounded-lg fixed bottom-0 left-0 right-0 border-t border-gray-200">
-            <div className="max-w-4xl mx-auto flex justify-end space-x-4">
+          <div className="fixed bottom-0 left-0 right-0 z-10">
+            <div className="bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] px-6 py-4 border-t border-gray-200">
+              <div className="max-w-4xl mx-auto flex justify-end space-x-4">
               <button
                 type="button"
                 onClick={() => navigate('/admin/dashboard')}
@@ -498,11 +616,19 @@ export default function CreateExam() {
                   </>
                 )}
               </button>
+              </div>
             </div>
           </div>
-          <div className="h-20" /> {/* Spacer for fixed footer */}
         </form>
       </div>
+
+      {selectedImage && (
+        <ImageZoom
+          src={selectedImage}
+          alt="Zoomed question image"
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }
