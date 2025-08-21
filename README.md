@@ -1,54 +1,129 @@
-# React + TypeScript + Vite
+# Exam Portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Logo](/public/logo.svg)
 
-Currently, two official plugins are available:
+A modern, secure, and user-friendly online exam portal built with React, TypeScript, and Vite. This application provides a seamless experience for both students taking exams and administrators managing them.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+### For Students
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **Secure Authentication:** Students can securely log in to access their exams.
+*   **Dashboard:** A personalized dashboard displaying upcoming and past exams.
+*   **Exam Interface:** A clean and intuitive interface for taking exams.
+*   **Real-time Timer:** A timer to keep track of the remaining time during an exam.
+*   **Instant Results:** View results immediately after completing an exam.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### For Administrators
+
+*   **Secure Admin Login:** Separate and secure login for administrators.
+*   **Admin Dashboard:** A comprehensive dashboard to manage exams, users, and results.
+*   **Exam Management:** Create, update, and delete exams with ease.
+*   **User Management:** View, create, and manage user accounts.
+*   **Result Tracking:** Monitor and analyze exam results.
+*   **Bulk User Creation:** Easily create multiple user accounts at once.
+
+## Tech Stack
+
+*   **Frontend:** React, TypeScript, Vite
+*   **Styling:** CSS, Tailwind CSS (or other styling library if used)
+*   **State Management:** Zustand
+*   **Routing:** React Router
+*   **API Client:** Axios
+*   **Linting:** ESLint
+*   **Package Manager:** npm / bun
+
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+*   Node.js (v18 or higher)
+*   npm or bun
+
+### Installation
+
+1.  Clone the repo
+    ```sh
+    git clone https://github.com/your_username/exam-portal.git
+    ```
+2.  Install NPM packages
+    ```sh
+    npm install
+    ```
+    or
+    ```sh
+    bun install
+    ```
+3.  Start the development server
+    ```sh
+    npm run dev
+    ```
+    or
+    ```sh
+    bun run dev
+    ```
+
+## Project Structure
+
+```
+/
+├── public/
+│   ├── examconfig.seb
+│   ├── logo.svg
+│   └── vite.svg
+├── src/
+│   ├── assets/
+│   ├── components/
+│   │   ├── auth/
+│   │   ├── layouts/
+│   │   └── ui/
+│   ├── hooks/
+│   ├── pages/
+│   │   └── admin/
+│   ├── services/
+│   ├── store/
+│   └── types/
+├── .gitignore
+├── index.html
+├── package.json
+├── README.md
+└── vite.config.ts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## API Endpoints
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The application interacts with a backend API for data and authentication. The base URL for the API is configured in `src/services/api.ts`.
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Auth Endpoints
+
+*   `POST /api/auth/login`: User login
+*   `POST /api/auth/admin/login`: Admin login
+
+### Exam Endpoints
+
+*   `GET /api/exams`: Get all exams
+*   `GET /api/exams/:id`: Get a specific exam
+*   `POST /api/exams/:id/submit`: Submit exam answers
+
+### Admin Endpoints
+
+*   `GET /api/admin/exams`: Get all exams (admin)
+*   `POST /api/admin/exams`: Create a new exam
+*   `GET /api/admin/users`: Get all users
+*   `POST /api/admin/users/bulk`: Bulk create users
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
